@@ -1,9 +1,9 @@
 SharedMemory
 ============
 
-C# shared memory classes for sharing data between processes (Array, Buffer, Circular Buffer and RPC)
+C# shared memory classes for sharing data between processes (Array, Buffer, Circular Buffer and RPC), unfortunately requires `mscorlib.dll` so is not cross-platform, unlike [StirlingLabs/interprocess](https://github.com/StirlingLabs/interprocess).
 
-[![Build status](https://ci.appveyor.com/api/projects/status/uc32kwm1281y4sie?svg=true)](https://ci.appveyor.com/project/spazzarama/sharedmemory)
+[![Test Status](https://badgen.net/github/checks/StirlingLabs/SharedMemory?icon=github)](https://github.com/StirlingLabs/SharedMemory/actions)
 
 About
 -----
