@@ -30,9 +30,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
-#if NET40Plus
 using System.Threading.Tasks;
-#endif
 
 namespace ServerTest
 {
@@ -123,16 +121,11 @@ namespace ServerTest
                 sw.Start();
 
                 Console.WriteLine("Testing throughput...");
-#if NET40Plus
+
                 Task s1 = Task.Factory.StartNew(writer);
                 //Task s2 = Task.Factory.StartNew(writer);
                 //Task s3 = Task.Factory.StartNew(writer);
-#else
-                ThreadPool.QueueUserWorkItem((o) =>
-                {
-                    writer();
-                });
-#endif
+
                 Console.ReadLine();
             }
         }

@@ -1,12 +1,12 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace SharedMemoryTests
 {
-    [TestClass]
+    [TestFixture]
     public class BufferReadWriteTests
     {
-        [TestMethod]
+        [Test]
         public void Constructor_ProducerConsumer_Created()
         {
             var name = Guid.NewGuid().ToString();
@@ -17,7 +17,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_Bytes_DataMatches()
         {
             var name = Guid.NewGuid().ToString();
@@ -39,7 +39,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_TimeoutException()
         {
             bool timedout = false;

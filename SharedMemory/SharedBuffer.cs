@@ -26,8 +26,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text;
@@ -39,10 +42,6 @@ namespace SharedMemory
     /// Abstract base class that provides client/server support for reading/writing structures to a buffer within a <see cref="MemoryMappedFile" />.
     /// A header structure allows clients to open the buffer without knowing the size.
     /// </summary>
-#if NETFULL
-    [PermissionSet(SecurityAction.LinkDemand)]
-    [PermissionSet(SecurityAction.InheritanceDemand)]
-#endif
     public abstract unsafe class SharedBuffer : IDisposable
     {
         #region Public/Protected properties
@@ -51,19 +50,18 @@ namespace SharedMemory
         /// The name of the Shared Memory instance
         /// </summary>
         public string Name { get; private set; }
-        
+
         /// <summary>
         /// The buffer size
         /// </summary>
         public long BufferSize { get; private set; }
-        
+
         /// <summary>
         /// The total shared memory size, including header and buffer.
         /// </summary>
         public virtual long SharedMemorySize
         {
-            get
-            {
+            get {
                 return HeaderOffset + Marshal.SizeOf(typeof(SharedHeader)) + BufferSize;
             }
         }
@@ -72,14 +70,13 @@ namespace SharedMemory
         /// Indicates whether this instance owns the shared memory (i.e. creator of the shared memory)
         /// </summary>
         public bool IsOwnerOfSharedMemory { get; private set; }
-        
+
         /// <summary>
         /// Returns true if the SharedMemory owner has/is shutting down
         /// </summary>
         public bool ShuttingDown
         {
-            get
-            {
+            get {
                 if (Header == null || Header->Shutdown == 1)
                 {
                     return true;
@@ -96,8 +93,7 @@ namespace SharedMemory
         /// </summary>
         protected virtual long HeaderOffset
         {
-            get
-            {
+            get {
                 return 0;
             }
         }
@@ -107,8 +103,7 @@ namespace SharedMemory
         /// </summary>
         protected virtual long BufferOffset
         {
-            get
-            {
+            get {
                 return HeaderOffset + Marshal.SizeOf(typeof(SharedHeader));
             }
         }
@@ -159,15 +154,19 @@ namespace SharedMemory
         /// </remarks>
         protected SharedBuffer(string name, long bufferSize, bool ownsSharedMemory)
         {
+
             #region Argument validation
+
             if (name == String.Empty || name == null)
                 throw new ArgumentException("Cannot be String.Empty or null", "name");
             if (ownsSharedMemory && bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", bufferSize, "Buffer size must be larger than zero when creating a new shared memory buffer.");
+                throw new ArgumentOutOfRangeException("bufferSize", bufferSize,
+                    "Buffer size must be larger than zero when creating a new shared memory buffer.");
 #if DEBUG
             else if (!ownsSharedMemory && bufferSize > 0)
                 System.Diagnostics.Debug.Write("Buffer size is ignored when opening an existing shared memory buffer.", "Warning");
 #endif
+
             #endregion
 
             IsOwnerOfSharedMemory = ownsSharedMemory;
@@ -210,7 +209,7 @@ namespace SharedMemory
                 if (IsOwnerOfSharedMemory)
                 {
                     // Create a new shared memory mapping
-                    Mmf = MemoryMappedFile.CreateNew(Name, SharedMemorySize);
+                    Mmf = CreateNew();
 
                     // Create a view to the entire region of the shared memory
                     View = Mmf.CreateViewAccessor(0, SharedMemorySize, MemoryMappedFileAccess.ReadWrite);
@@ -223,10 +222,12 @@ namespace SharedMemory
                 else
                 {
                     // Open an existing shared memory mapping
-                    Mmf = MemoryMappedFile.OpenExisting(Name);
+
+                    Mmf = OpenExisting();
 
                     // Retrieve the header from the shared memory in order to initialise the correct size
-                    using (var headerView = Mmf.CreateViewAccessor(0, HeaderOffset + Marshal.SizeOf(typeof(SharedHeader)), MemoryMappedFileAccess.Read))
+                    using (var headerView = Mmf.CreateViewAccessor(0, HeaderOffset + Marshal.SizeOf(typeof(SharedHeader)),
+                        MemoryMappedFileAccess.Read))
                     {
                         byte* headerPtr = null;
                         headerView.SafeMemoryMappedViewHandle.AcquirePointer(ref headerPtr);
@@ -267,6 +268,31 @@ namespace SharedMemory
                 throw;
             }
         }
+
+        private static object GetProcessId()
+#if NETSTANDARD
+        {
+            using var proc = Process.GetCurrentProcess();
+            return proc.Id;
+        }
+#else
+            => Environment.ProcessId;
+#endif
+
+        private MemoryMappedFile CreateNew()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return MemoryMappedFile.CreateNew(Name, SharedMemorySize);
+
+            var path = $"/tmp/shm.{GetProcessId()}/{Name}";
+            File.Open(path, FileMode.CreateNew).Dispose();
+            return MemoryMappedFile.CreateFromFile(path, FileMode.CreateNew);
+        }
+
+        private MemoryMappedFile OpenExisting()
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? MemoryMappedFile.OpenExisting(Name)
+                : MemoryMappedFile.CreateFromFile($"/tmp/shm.{GetProcessId()}/{Name}");
 
         /// <summary>
         /// Allows any classes that inherit from <see cref="SharedBuffer"/> to perform additional open logic. There is no need to call base.DoOpen() from these implementations.
@@ -330,9 +356,7 @@ namespace SharedMemory
         /// Any classes that inherit from <see cref="SharedBuffer"/> should implement any <see cref="Close"/> logic here, <see cref="Mmf"/> and <see cref="View"/> are still active at this point. There is no need to call base.DoClose() from these classes.
         /// </summary>
         /// <remarks>It is possible for <see cref="Close"/> to be called before <see cref="Open"/> has completed successfully, in this situation <see cref="DoClose"/> should fail gracefully.</remarks>
-        protected virtual void DoClose()
-        {
-        }
+        protected virtual void DoClose() { }
 
         #endregion
 
@@ -397,11 +421,7 @@ namespace SharedMemory
         /// <param name="bufferPosition">The offset within the buffer region of the shared memory to write to.</param>
         protected virtual void Write(IntPtr source, int length, long bufferPosition = 0)
         {
-#if NETCORE
             Buffer.MemoryCopy((void*)source, BufferStartPtr + bufferPosition, BufferSize - bufferPosition, length);
-#else
-            UnsafeNativeMethods.CopyMemory(new IntPtr(BufferStartPtr + bufferPosition), source, (uint)length);
-#endif
         }
 
         /// <summary>
@@ -464,11 +484,7 @@ namespace SharedMemory
         /// <param name="bufferPosition">The offset within the buffer region of the shared memory to read from.</param>
         protected virtual void Read(IntPtr destination, int length, long bufferPosition = 0)
         {
-#if NETCORE
             Buffer.MemoryCopy(BufferStartPtr + bufferPosition, (void*)destination, length, length);
-#else
-            UnsafeNativeMethods.CopyMemory(destination, new IntPtr(BufferStartPtr + bufferPosition), (uint)length);
-#endif
         }
 
         /// <summary>

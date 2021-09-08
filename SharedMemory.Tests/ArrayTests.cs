@@ -26,7 +26,7 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using SharedMemory;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -34,10 +34,10 @@ using SharedMemory.Utilities;
 
 namespace SharedMemoryTests
 {
-    [TestClass]
+    [TestFixture]
     public class ArrayTests
     {
-        [TestMethod]
+        [Test]
         public void Indexer_ReadWriteInteger_DataMatches()
         {
             var name = Guid.NewGuid().ToString();
@@ -83,7 +83,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Indexer_OutOfRange_ThrowsException()
         {
             var name = Guid.NewGuid().ToString();
@@ -177,7 +177,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Test_MyTestStruct()
         {
             var my = new MyTestStruct();
@@ -186,7 +186,7 @@ namespace SharedMemoryTests
             Assert.AreEqual("short string", my.Name);
         }
 
-        [TestMethod]
+        [Test]
         public void Indexer_ReadWriteComplexStruct_DataMatches()
         {
             var name = Guid.NewGuid().ToString();
@@ -206,7 +206,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void CopyTo_NullArray_ThrowsException()
         {
             var name = Guid.NewGuid().ToString();
@@ -225,7 +225,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Write_NullArray_ThrowsException()
         {
             var name = Guid.NewGuid().ToString();
@@ -244,7 +244,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void GetEnumerator_IterateItems_DataMatches()
         {
             var name = Guid.NewGuid().ToString();
@@ -265,7 +265,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void AcquireWriteLock_ReadWrite_LocksCorrectly()
         {
             var name = Guid.NewGuid().ToString();
@@ -328,7 +328,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void AcquireReadWriteLocks_ReadWrite_Blocks()
         {
             var name = Guid.NewGuid().ToString();
@@ -354,7 +354,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void IList_Contains()
         {
             var name = Guid.NewGuid().ToString();
@@ -370,7 +370,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void IList_IndexOf()
         {
             var name = Guid.NewGuid().ToString();
@@ -386,7 +386,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void IList_IsReadOnly()
         {
             var name = Guid.NewGuid().ToString();

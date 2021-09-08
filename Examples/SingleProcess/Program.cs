@@ -32,9 +32,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using CommandLine;
-#if NET40Plus
 using System.Threading.Tasks;
-#endif
 
 namespace SingleProcess
 {
@@ -136,11 +134,7 @@ namespace SingleProcess
             };
             for (int c = 0; c < clientCount; c++)
             {
-#if NET40Plus
                 Task c1 = Task.Factory.StartNew(clientAction);
-#else
-                ThreadPool.QueueUserWorkItem((o) => { clientAction(); });
-#endif
             }
             bool wait = true;
             int index = 0;
@@ -187,11 +181,7 @@ namespace SingleProcess
 
             for (int s = 0; s < serverCount; s++)
             {
-#if NET40Plus
                 Task s1 = Task.Factory.StartNew(serverWrite);
-#else
-                ThreadPool.QueueUserWorkItem((o) => { serverWrite(); });
-#endif
             }
             while (wait)
                 Thread.Sleep(100);

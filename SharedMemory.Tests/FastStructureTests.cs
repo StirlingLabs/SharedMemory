@@ -25,13 +25,13 @@
 //   http://www.codeproject.com/Articles/14740/Fast-IPC-Communication-Using-Shared-Memory-and-Int
 
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Runtime.InteropServices;
 using SharedMemory;
 
 namespace SharedMemoryTests
 {
-    [TestClass]
+    [TestFixture]
     public class FastStructureTests
     {
         #region Test Structures
@@ -93,7 +93,7 @@ namespace SharedMemoryTests
 
         #endregion
 
-        [TestMethod]
+        [Test]
         public void FastStructure_IncompabitibleNestedType()
         {
             try
@@ -108,7 +108,7 @@ namespace SharedMemoryTests
             Assert.Fail("Did not throw TypeInitializationException for incompatible nested type: IncompatibleNestedStructure.");
         }
 
-        [TestMethod]
+        [Test]
         public void FastStructure_IncompatibleStructure()
         {
             try
@@ -123,13 +123,13 @@ namespace SharedMemoryTests
             Assert.Fail("Did not throw TypeInitializationException for incompatible type: NestedStructure2.");
         }
 
-        [TestMethod]
+        [Test]
         public void FastStructure_CompatibleStructureSize()
         {
             Assert.AreEqual(IntPtr.Size * 4 + 8 + (sizeof(int) * 2), FastStructure<CompatibleStructure>.Size);
         }
 
-        [TestMethod]
+        [Test]
         public void FastStructure_ComplexStructureSize()
         {
             var sizeOfCompatibleStructure = IntPtr.Size * 4 + 8 + (sizeof(int) * 2);
@@ -137,7 +137,7 @@ namespace SharedMemoryTests
             Assert.AreEqual(sizeOfComplexStructure, FastStructure<ComplexStructure>.Size);
         }
 
-        [TestMethod]
+        [Test]
         public void FastStructure_AllocHGlobalReadWrite()
         {
             IntPtr mem = Marshal.AllocHGlobal(FastStructure.SizeOf<ComplexStructure>());

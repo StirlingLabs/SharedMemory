@@ -36,9 +36,6 @@ namespace SharedMemory
     /// <summary>
     /// Read/Write buffer with support for simple inter-process read/write synchronisation.
     /// </summary>
-#if NETFULL
-    [PermissionSet(SecurityAction.LinkDemand)]
-#endif
     public unsafe class BufferReadWrite : BufferWithLocks
     {
         #region Constructors

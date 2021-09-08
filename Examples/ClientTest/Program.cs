@@ -31,10 +31,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using SharedMemory;
-
-#if NET40Plus
 using System.Threading.Tasks;
-#endif
 
 namespace ClientTest
 {
@@ -144,16 +141,12 @@ namespace ClientTest
                 sw.Reset();
                 sw.Start();
                 Console.WriteLine("Testing data throughput (low CPU, high bandwidth)...");
-#if NET40Plus                
+
                 Task c1 = Task.Factory.StartNew(reader);
                 Task c2 = Task.Factory.StartNew(reader);
                 Task c3 = Task.Factory.StartNew(reader);
                 //Task c4 = Task.Factory.StartNew(reader);
-#else
-                ThreadPool.QueueUserWorkItem((o) => { reader(); });
-                ThreadPool.QueueUserWorkItem((o) => { reader(); });
-                ThreadPool.QueueUserWorkItem((o) => { reader(); });
-#endif
+
                 Console.ReadLine();
             }
         }

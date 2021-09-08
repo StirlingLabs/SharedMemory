@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using SharedMemory.Utilities;
 
 namespace SharedMemoryTests
 {
-    [TestClass]
+    [TestFixture]
     public class ExpandingArrayTests
     {
-        [TestMethod]
+        [Test]
         public void ExpandingArrayTests_GrownReport()
         {
             var sb = new StringBuilder();
@@ -55,7 +55,7 @@ namespace SharedMemoryTests
 ", sb.ToString());
         }
 
-        [TestMethod]
+        [Test]
         public void ExpandingArrayTests_Basic()
         {
             var ea = new ExpandingArray<int>(size => new int[size]);

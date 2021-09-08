@@ -26,7 +26,7 @@
 
 using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -34,12 +34,12 @@ using SharedMemory;
 
 namespace SharedMemoryTests
 {
-    [TestClass]
+    [TestFixture]
     public class CircularBufferTests
     {
         #region Constructor tests
 
-        [TestMethod]
+        [Test]
         public void Constructor_ProducerEmptyName_ExceptionThrown()
         {
             string name = String.Empty;
@@ -58,7 +58,7 @@ namespace SharedMemoryTests
             }
         }
 
-        //[TestMethod]
+        //[Test]
         //public void Constructor_ConsumerNodeCount1_ValueIgnored()
         //{
         //    string name = Guid.NewGuid().ToString();
@@ -69,7 +69,7 @@ namespace SharedMemoryTests
         //    }
         //}
 
-        //[TestMethod]
+        //[Test]
         //public void Constructor_ConsumerBufferSize1_ValueIgnored()
         //{
         //    string name = Guid.NewGuid().ToString();
@@ -79,7 +79,7 @@ namespace SharedMemoryTests
         //    }
         //}
 
-        [TestMethod]
+        [Test]
         public void Constructor_ProducerNodeCount1_ExceptionThrown()
         {
             string name = Guid.NewGuid().ToString();
@@ -98,7 +98,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Constructor_ProducerNodeCount0_ExceptionThrown()
         {
             string name = Guid.NewGuid().ToString();
@@ -121,7 +121,7 @@ namespace SharedMemoryTests
 
         #region Open/Close tests
 
-        [TestMethod]
+        [Test]
         public void Constructor_Producer_True()
         {
             string name = Guid.NewGuid().ToString();
@@ -130,7 +130,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Constructor_ConsumerWithoutProducer_FileNotFoundException()
         {
             string name = Guid.NewGuid().ToString();
@@ -147,7 +147,7 @@ namespace SharedMemoryTests
             Assert.Fail("Trying to open non-existant MMF did not throw FileNotFoundException");
         }
 
-        [TestMethod]
+        [Test]
         public void Constructor_DuplicateProducer_IOException()
         {
             string name = Guid.NewGuid().ToString();
@@ -165,7 +165,7 @@ namespace SharedMemoryTests
             Assert.Fail("Trying to create duplicate MMF did not throw IOException");
         }
 
-        [TestMethod]
+        [Test]
         public void Constructor_ProducerAndConsumer_True()
         {
             string name = Guid.NewGuid().ToString();
@@ -176,7 +176,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Close_CheckShuttingDown_True()
         {
             string name = Guid.NewGuid().ToString();
@@ -189,7 +189,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Constructor_BufferTooLarge_ArgumentOutOfRangeException()
         {
             // If it's not 32-bit build, then we can't test for out-of-range.
@@ -222,19 +222,19 @@ namespace SharedMemoryTests
 
         #region Size assumption tests
 
-        [TestMethod]
+        [Test]
         public void StructSize_SharedMemoryHeader_Is16bytes()
         {
             Assert.AreEqual(16, Marshal.SizeOf(typeof(SharedHeader)));
         }
 
-        [TestMethod]
+        [Test]
         public void StructSize_Node_Is32bytes()
         {
             Assert.AreEqual(32, Marshal.SizeOf(typeof(CircularBuffer.Node)));
         }
 
-        [TestMethod]
+        [Test]
         public void StructSize_SharedMemoryNodeHeader_Is24bytes()
         {
             Assert.AreEqual(24, Marshal.SizeOf(typeof(CircularBuffer.NodeHeader)));
@@ -244,7 +244,7 @@ namespace SharedMemoryTests
 
         #region Read/Write tests
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_SingleNode_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -275,7 +275,7 @@ namespace SharedMemoryTests
         /// <summary>
         /// Test that the SharedHeader is correct before, during and after a single read/write
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ReadWrite_SingleNode_HeaderIndexesCorrect()
         {
             string name = Guid.NewGuid().ToString();
@@ -334,7 +334,7 @@ namespace SharedMemoryTests
             public int Prop4;
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_MyTestStruct_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -367,7 +367,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_1000NodesIn2NodeRing_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -475,7 +475,7 @@ namespace SharedMemoryTests
             return totalBytesRead;
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWriteAsync_1000NodesIn2NodeRing_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -519,7 +519,7 @@ namespace SharedMemoryTests
         /// <summary>
         /// Test the write node available event signal by making the writer thread wait for the reader thread. Done by simulating a slightly slower read vs write, with a low write timeout of 1ms.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ReadWriteAsync_SlowReaderSmallWriterTimeout_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -564,7 +564,7 @@ namespace SharedMemoryTests
         /// <summary>
         /// Test the read data exists event signal by making the reader thread wait for the writer thread. Done by simulating a slightly slower write vs read, with a low read timeout of 1ms.
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ReadWriteAsync_SlowWriterSmallReaderTimeout_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -617,7 +617,7 @@ namespace SharedMemoryTests
         /// for node 1 will move the WriteEnd pointer for node 1, 2 and then 3 also clearing the DoneWrite flag. This ensures that the nodes are ready for reading in 
         /// the correct order and the read/write indexes maintain their integrity. The same applies to reading and ReturnNode.</para>
         /// </summary>
-        [TestMethod]
+        [Test]
         public void ReadWrite_NonSequentialReadWrite_HeaderIndexesCorrect()
         {
             string name = Guid.NewGuid().ToString();
@@ -723,7 +723,7 @@ namespace SharedMemoryTests
             public int Value2;
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_StructuredData_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -752,7 +752,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void ReadWrite_StructuredData_ReadWriteStartIndex()
         {
             string name = Guid.NewGuid().ToString();
@@ -793,7 +793,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public unsafe void ReadWrite_IntPtr_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
@@ -831,7 +831,7 @@ namespace SharedMemoryTests
             }
         }
 
-        [TestMethod]
+        [Test]
         public unsafe void ReadWrite_DelegateIntPtr_DataMatches()
         {
             string name = Guid.NewGuid().ToString();

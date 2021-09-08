@@ -27,15 +27,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using SharedMemory.Utilities;
 
 namespace SharedMemoryTests
 {
-    [TestClass]
+    [TestFixture]
     public class ArraySliceTests
     {
-        [TestMethod]
+        [Test]
         public void ArraySlice_WorksLikeArray()
         {
             var a = new[] {1.0, 2.71828, 3.14, 4, 4.99999, 42, 1024};
@@ -71,7 +71,7 @@ namespace SharedMemoryTests
             Assert.IsTrue(ApproximatelyEqual(1081.85827, asList.Sum()));
         }
 
-        [TestMethod]
+        [Test]
         public void ArraySlice_TestSlice()
         {
             var a = new[] { 1.0, 2.71828, 3.14, 4, 4.99999, 42, 1024 };
