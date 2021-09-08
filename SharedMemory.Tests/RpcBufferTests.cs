@@ -446,8 +446,50 @@ namespace SharedMemoryTests
             ipcSlave.RemoteRequest(null);
 
             ipcMaster.Dispose();
+            while (!ipcMaster.DisposeFinished)
+            {
+                Task.Delay(125).Wait();
+            }
 
             Assert.Throws<InvalidOperationException>(() => ipcSlave.RemoteRequest(null));
         }
+        
+        [Test]
+        public void RPC_Dispose()
+        {
+            // Warmup the Theadpool
+            ThreadPool.SetMinThreads(15, 10);
+
+            for (int i = 0; i < 10; i++)
+            {
+                ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) =>
+                {
+                }, bufferCapacity: 256);
+
+                ipcSlave = new RpcBuffer(ipcName, (msgId, payload) =>
+                {
+                    ipcSlave.Dispose();
+                    return new byte[] { (byte)(payload[0] * payload[1]) };
+                    
+                });
+
+                Stopwatch watch = Stopwatch.StartNew();
+
+                ipcMaster.RemoteRequestAsync(new byte[] { 3, 3 });
+                Task.Delay(125).Wait();
+                ipcSlave.Dispose();
+                watch.Stop();
+
+                ipcMaster.Dispose();
+
+                while (!ipcMaster.DisposeFinished || !ipcSlave.DisposeFinished)
+                {
+                    Task.Delay(125).Wait();
+                }
+                
+            }
+            
+        }
+        
     }
 }
