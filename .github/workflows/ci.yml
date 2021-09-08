@@ -24,7 +24,7 @@ jobs:
           dotnet build -f netstandard2.1 SharedMemory/SharedMemory.csproj
           dotnet build -f netcoreapp3.0  SharedMemory.Tests/SharedMemory.Tests.csproj
       - name: Test
-        run: dotnet test SharedMemory.Tests/SharedMemory.Tests.csproj --no-build --runtime linux-x64
+        run: dotnet test SharedMemory.Tests/SharedMemory.Tests.csproj -f netcoreapp3.0 --no-build --runtime linux-x64
   macos_build_and_test:
     runs-on: macos-latest
     env:
@@ -44,4 +44,4 @@ jobs:
           dotnet build -f netstandard2.1 SharedMemory/SharedMemory.csproj
           dotnet build -f netcoreapp3.0  SharedMemory.Tests/SharedMemory.Tests.csproj
       - name: Test
-        run: dotnet test SharedMemory.Tests/SharedMemory.Tests.csproj --no-build --runtime osx-x64
+        run: dotnet test SharedMemory.Tests/SharedMemory.Tests.csproj -f netcoreapp3.0 --no-build --runtime osx-x64
