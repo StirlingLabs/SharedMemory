@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text;
@@ -41,17 +42,17 @@ namespace SharedMemory
     public unsafe class CircularBuffer : SharedBuffer
     {
         #region Public/Protected properties
-        
+
         /// <summary>
         /// The number of nodes within the circular linked-list
         /// </summary>
         public int NodeCount { get; private set; }
-        
+
         /// <summary>
         /// The buffer size of each node
         /// </summary>
         public int NodeBufferSize { get; private set; }
-        
+
         /// <summary>
         /// Event signaled when data has been written if the reading index has caught up to the writing index
         /// </summary>
@@ -67,20 +68,18 @@ namespace SharedMemory
         /// </summary>
         protected virtual long NodeHeaderOffset
         {
-            get
-            {
+            get {
                 return 0;
             }
         }
-            
+
         /// <summary>
         /// Where the linked-list nodes are located within the buffer
         /// </summary>
         protected virtual long NodeOffset
         {
-            get
-            {
-                return NodeHeaderOffset + Marshal.SizeOf(typeof(NodeHeader));
+            get {
+                return NodeHeaderOffset + Unsafe.SizeOf<NodeHeader>();
             }
         }
 
@@ -89,9 +88,8 @@ namespace SharedMemory
         /// </summary>
         protected virtual long NodeBufferOffset
         {
-            get
-            {
-                return NodeOffset + (Marshal.SizeOf(typeof(Node)) * NodeCount);
+            get {
+                return NodeOffset + (Unsafe.SizeOf<Node>() * NodeCount);
             }
         }
 
@@ -102,8 +100,7 @@ namespace SharedMemory
         /// <returns></returns>
         protected virtual Node* this[int i]
         {
-            get
-            {
+            get {
                 if (i < 0 || i >= NodeCount)
                     throw new ArgumentOutOfRangeException();
 
@@ -116,7 +113,7 @@ namespace SharedMemory
         #region Private field members
 
         private NodeHeader* _nodeHeader = null;
-        
+
         #endregion
 
         #region Structures
@@ -188,7 +185,7 @@ namespace SharedMemory
             /// Represents the offset relative to <see cref="SharedBuffer.BufferStartPtr"/> where the data for this node can be found.
             /// </summary>
             public long Offset;
-            
+
             /// <summary>
             /// Represents the index of the current node.
             /// </summary>
@@ -238,15 +235,19 @@ namespace SharedMemory
         }
 
         private CircularBuffer(string name, int nodeCount, int nodeBufferSize, bool ownsSharedMemory)
-            : base(name, Marshal.SizeOf(typeof(NodeHeader)) + (Marshal.SizeOf(typeof(Node)) * nodeCount) + (nodeCount * (long)nodeBufferSize), ownsSharedMemory)
+            : base(name, Unsafe.SizeOf<NodeHeader>() + (Unsafe.SizeOf<Node>() * nodeCount) + (nodeCount * (long)nodeBufferSize),
+                ownsSharedMemory)
         {
+
             #region Argument validation
+
             if (ownsSharedMemory && nodeCount < 2)
                 throw new ArgumentOutOfRangeException("nodeCount", nodeCount, "The node count must be a minimum of 2.");
 #if DEBUG
             else if (!ownsSharedMemory && (nodeCount != 0 || nodeBufferSize > 0))
                 System.Diagnostics.Debug.Write("Node count and nodeBufferSize are ignored when opening an existing shared memory circular buffer.", "Warning");
 #endif
+
             #endregion
 
             if (IsOwnerOfSharedMemory)
@@ -372,7 +373,7 @@ namespace SharedMemory
         /// <returns>An unsafe pointer to the node if successful, otherwise null</returns>
         protected virtual Node* GetNodeForWriting(int timeout)
         {
-            for (; ; )
+            for (;;)
             {
                 int blockIndex = _nodeHeader->WriteStart;
                 Node* node = this[blockIndex];
@@ -408,7 +409,7 @@ namespace SharedMemory
             // Move the write pointer as far forward as we can
             // always starting from WriteEnd to make all contiguous
             // completed nodes available for reading.
-            for (; ; )
+            for (;;)
             {
                 int blockIndex = _nodeHeader->WriteEnd;
                 node = this[blockIndex];
@@ -447,10 +448,9 @@ namespace SharedMemory
 
             // Copy the data
             int amount = Math.Min(source.Length - startIndex, NodeBufferSize);
-            
+
             Marshal.Copy(source, startIndex, new IntPtr(BufferStartPtr + node->Offset), amount);
             node->AmountWritten = amount;
-            
 
             // Writing is complete, make readable
             PostNode(node);
@@ -495,7 +495,7 @@ namespace SharedMemory
         public virtual int Write<T>(ref T source, int timeout = 1000)
             where T : struct
         {
-            int structSize = Marshal.SizeOf(typeof(T));
+            int structSize = Unsafe.SizeOf<T>();
             if (structSize > NodeBufferSize)
                 throw new ArgumentOutOfRangeException("T", "The size of structure " + typeof(T).Name + " is larger than NodeBufferSize");
 
@@ -586,7 +586,7 @@ namespace SharedMemory
         /// <returns>An unsafe pointer to the node if successful, otherwise null</returns>
         protected virtual Node* GetNodeForReading(int timeout)
         {
-            for (; ; )
+            for (;;)
             {
                 int blockIndex = _nodeHeader->ReadStart;
                 Node* node = this[blockIndex];
@@ -625,7 +625,7 @@ namespace SharedMemory
             // Move the read pointer forward as far as possible
             // always starting from ReadEnd to make all contiguous
             // read nodes available for writing.
-            for (; ; )
+            for (;;)
             {
                 int blockIndex = _nodeHeader->ReadEnd;
                 node = this[blockIndex];
@@ -641,9 +641,9 @@ namespace SharedMemory
                 Interlocked.CompareExchange(ref _nodeHeader->ReadEnd, node->Next, blockIndex);
 #pragma warning restore 0420
 
-               // If a writer thread is waiting on "node available" signal the event
+                // If a writer thread is waiting on "node available" signal the event
                 if (node->Prev == _nodeHeader->WriteStart)
-                        NodeAvailable.Set();
+                    NodeAvailable.Set();
             }
         }
 
@@ -706,9 +706,9 @@ namespace SharedMemory
         /// <returns>The number of bytes read</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the size of <typeparamref name="T"/> is larger than <see cref="NodeBufferSize"/>.</exception>
         public virtual int Read<T>(out T destination, int timeout = 1000)
-            where T: struct
+            where T : struct
         {
-            int structSize = Marshal.SizeOf(typeof(T));
+            int structSize = Unsafe.SizeOf<T>();
             if (structSize > NodeBufferSize)
                 throw new ArgumentOutOfRangeException("T", "The size of structure " + typeof(T).Name + " is larger than NodeBufferSize");
 

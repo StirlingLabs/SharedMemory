@@ -77,8 +77,7 @@ namespace SharedMemory
             }
 
             // Set up a timer to complete after the specified timeout period
-            Timer timer = new Timer(state =>
-            {
+            Timer timer = new Timer(state => {
                 // Recover your state information
                 var myTcs = (TaskCompletionSource<RpcResponse>)state;
 
@@ -88,8 +87,7 @@ namespace SharedMemory
             }, tcs, millisecondsTimeout, Timeout.Infinite);
 
             // Wire up the logic for what happens when source task completes
-            task.ContinueWith((antecedent, state) =>
-                {
+            task.ContinueWith((antecedent, state) => {
                     // Recover our state data
                     var tuple =
                         (Tuple<Timer, TaskCompletionSource<RpcResponse>>)state;
@@ -121,7 +119,9 @@ namespace SharedMemory
                 case TaskStatus.RanToCompletion:
                     Task<TResult> castedSource = source as Task<TResult>;
                     proxy.TrySetResult(
-                        castedSource == null ? default(TResult) : // source is a Task
+                        castedSource == null
+                            ? default(TResult)
+                            : // source is a Task
                             castedSource.Result); // source is a Task<TResult>
                     break;
             }
@@ -184,26 +184,32 @@ namespace SharedMemory
     public class RpcRequest
     {
         internal RpcRequest() { }
+
         /// <summary>
         /// The message Id
         /// </summary>
         public ulong MsgId { get; set; }
+
         /// <summary>
         /// The message type
         /// </summary>
         public MessageType MsgType { get; set; }
+
         /// <summary>
         /// The message payload (if any)
         /// </summary>
         public byte[] Data { get; set; }
+
         /// <summary>
         /// A wait event that is signaled when a response is ready
         /// </summary>
         public TaskCompletionSource<RpcResponse> ResponseReady { get; } = new TaskCompletionSource<RpcResponse>();
+
         /// <summary>
         /// Was the request successful
         /// </summary>
         public bool IsSuccess { get; internal set; }
+
         /// <summary>
         /// When the request was created
         /// </summary>
@@ -251,18 +257,22 @@ namespace SharedMemory
         /// Bytes read from channel (excluding protocol overhead)
         /// </summary>
         public ulong BytesRead { get; private set; }
+
         /// <summary>
         /// Number of packets read from channel
         /// </summary>
         public ulong PacketsRead { get; private set; }
+
         /// <summary>
         /// The largest packet read from channel (excluding protocol overhead)
         /// </summary>
         public int ReadingMaxPacketSize { get; private set; }
+
         /// <summary>
         /// The size of last packet read from channel (excluding protocol overhead)
         /// </summary>
         public int ReadingLastPacketSize { get; private set; } = -1;
+
         /// <summary>
         /// The size of last message read from channel (excluding protocol overhead)
         /// </summary>
@@ -271,7 +281,11 @@ namespace SharedMemory
         /// <summary>
         /// The total number of messages received
         /// </summary>
-        public ulong MessagesReceived { get { return RequestsReceived + ResponsesReceived + ErrorsReceived; } }
+        public ulong MessagesReceived
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return RequestsReceived + ResponsesReceived + ErrorsReceived; }
+        }
 
         /// <summary>
         /// The number of request messages received
@@ -292,10 +306,12 @@ namespace SharedMemory
         /// The number of bytes written to channel (excluding protocol overhead)
         /// </summary>
         public ulong BytesWritten { get; private set; }
+
         /// <summary>
         /// The number of packets written to channel
         /// </summary>
         public ulong PacketsWritten { get; private set; }
+
         /// <summary>
         /// The largest packet written to channel (excluding protocol overhead)
         /// </summary>
@@ -315,6 +331,7 @@ namespace SharedMemory
         /// Number of response messages received that were discarded (provided a non-existent message Id)
         /// </summary>
         public ulong DiscardedResponses { get; private set; }
+
         /// <summary>
         /// The response message Id that was last discarded
         /// </summary>
@@ -323,7 +340,11 @@ namespace SharedMemory
         /// <summary>
         /// The total number of messages sent
         /// </summary>
-        public ulong MessagesSent { get { return RequestsSent + ResponsesSent + ErrorsSent; } }
+        public ulong MessagesSent
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return RequestsSent + ResponsesSent + ErrorsSent; }
+        }
 
         /// <summary>
         /// The number of request messages sent
@@ -344,23 +365,29 @@ namespace SharedMemory
         /// Number of timeouts
         /// </summary>
         public ulong Timeouts { get; private set; }
+
         /// <summary>
         /// DateTime of last timeout
         /// </summary>
         public DateTime LastTimeout { get; private set; }
+
         DateTime StartWaitWriteTimestamp { get; set; }
         DateTime EndWaitWriteTimestamp { get; set; }
+
         /// <summary>
         /// Maximum Ticks waited for available write slot
         /// </summary>
         public long MaxWaitWriteTicks { get; private set; } = -1;
+
         DateTime StartWaitReadTimestamp { get; set; }
         DateTime EndWaitReadTimestamp { get; set; }
+
         /// <summary>
         /// Maximum Ticks waiting for read slot (cannot exceed 1sec)
         /// </summary>
         public long MaxWaitReadTicks { get; private set; } = -1;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void StartWaitRead()
         {
             StartWaitReadTimestamp = DateTime.Now;
@@ -385,6 +412,7 @@ namespace SharedMemory
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void StartWaitWrite()
         {
             StartWaitWriteTimestamp = DateTime.Now;
@@ -443,12 +471,14 @@ namespace SharedMemory
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Timeout()
         {
             Timeouts++;
             LastTimeout = DateTime.Now;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void DiscardResponse(ulong msgId)
         {
             DiscardedResponses++;
@@ -498,16 +528,16 @@ namespace SharedMemory
         /// </summary>
         protected bool Disposed
         {
-            get
-            {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get {
                 return Interlocked.Read(ref _disposed) != 0;
             }
         }
 
         public bool DisposeFinished
-            {
-            get
-            {
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get {
                 return Interlocked.Read(ref _disposed) == 2;
             }
         }
@@ -523,6 +553,7 @@ namespace SharedMemory
         /// The buffer used to send messages to remote channel endpoint
         /// </summary>
         protected CircularBuffer WriteBuffer { get; private set; }
+
         /// <summary>
         /// The buffer used to receive message from the remote channel endpoint
         /// </summary>
@@ -540,6 +571,7 @@ namespace SharedMemory
         /// Outgoing requests waiting for responses
         /// </summary>
         protected ConcurrentDictionary<ulong, RpcRequest> Requests { get; } = new ConcurrentDictionary<ulong, RpcRequest>();
+
         /// <summary>
         /// Incoming requests waiting for more packets
         /// </summary>
@@ -558,7 +590,8 @@ namespace SharedMemory
         /// <param name="bufferCapacity">Master only: Maximum buffer capacity. Messages will be split into packets that fit this capacity (including a packet header of 64-bytes). The slave will use the same size as defined by the master</param>
         /// <param name="protocolVersion">ProtocolVersion.V1 = 64-byte header for each packet</param>
         /// <param name="bufferNodeCount">Master only: The number of nodes in the underlying circular buffers, each with a size of <paramref name="bufferCapacity"/></param>
-        public RpcBuffer(string name, Action<ulong, byte[]> remoteCallHandler, int bufferCapacity = 50000, RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
+        public RpcBuffer(string name, Action<ulong, byte[]> remoteCallHandler, int bufferCapacity = 50000,
+            RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
             this(name, bufferCapacity, protocolVersion, bufferNodeCount)
         {
             RemoteCallHandler = remoteCallHandler;
@@ -572,7 +605,8 @@ namespace SharedMemory
         /// <param name="bufferCapacity">Master only: Maximum buffer capacity. Messages will be split into packets that fit this capacity (including a packet header of 64-bytes). The slave will use the same size as defined by the master</param>
         /// <param name="protocolVersion">ProtocolVersion.V1 = 64-byte header for each packet</param>
         /// <param name="bufferNodeCount">Master only: The number of nodes in the underlying circular buffers, each with a size of <paramref name="bufferCapacity"/></param>
-        public RpcBuffer(string name, Func<ulong, byte[], Task> asyncRemoteCallHandler, int bufferCapacity = 50000, RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
+        public RpcBuffer(string name, Func<ulong, byte[], Task> asyncRemoteCallHandler, int bufferCapacity = 50000,
+            RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
             this(name, bufferCapacity, protocolVersion, bufferNodeCount)
         {
             AsyncRemoteCallHandler = asyncRemoteCallHandler;
@@ -586,7 +620,8 @@ namespace SharedMemory
         /// <param name="bufferCapacity">Master only: Maximum buffer capacity. Messages will be split into packets that fit this capacity (including a packet header of 64-bytes). The slave will use the same size as defined by the master</param>
         /// <param name="protocolVersion">ProtocolVersion.V1 = 64-byte header for each packet</param>
         /// <param name="bufferNodeCount">Master only: The number of nodes in the underlying circular buffers, each with a size of <paramref name="bufferCapacity"/></param>
-        public RpcBuffer(string name, Func<ulong, byte[], byte[]> remoteCallHandlerWithResult, int bufferCapacity = 50000, RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
+        public RpcBuffer(string name, Func<ulong, byte[], byte[]> remoteCallHandlerWithResult, int bufferCapacity = 50000,
+            RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
             this(name, bufferCapacity, protocolVersion, bufferNodeCount)
         {
             RemoteCallHandlerWithResult = remoteCallHandlerWithResult;
@@ -600,7 +635,8 @@ namespace SharedMemory
         /// <param name="bufferCapacity">Master only: Maximum buffer capacity. Messages will be split into packets that fit this capacity (including a packet header of 64-bytes). The slave will use the same size as defined by the master</param>
         /// <param name="protocolVersion">ProtocolVersion.V1 = 64-byte header for each packet</param>
         /// <param name="bufferNodeCount">Master only: The number of nodes in the underlying circular buffers, each with a size of <paramref name="bufferCapacity"/></param>
-        public RpcBuffer(string name, Func<ulong, byte[], Task<byte[]>> asyncRemoteCallHandlerWithResult, int bufferCapacity = 50000, RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
+        public RpcBuffer(string name, Func<ulong, byte[], Task<byte[]>> asyncRemoteCallHandlerWithResult, int bufferCapacity = 50000,
+            RpcProtocol protocolVersion = RpcProtocol.V1, int bufferNodeCount = 10) :
             this(name, bufferCapacity, protocolVersion, bufferNodeCount)
         {
             AsyncRemoteCallHandlerWithResult = asyncRemoteCallHandlerWithResult;
@@ -670,9 +706,7 @@ namespace SharedMemory
 
             this.msgBufferLength = Convert.ToInt32(this.bufferCapacity) - protocolLength;
 
-
-            Task readTask = new Task(() =>
-            {
+            Task readTask = new Task(() => {
                 switch (protocolVersion)
                 {
                     case RpcProtocol.V1:
@@ -750,7 +784,8 @@ namespace SharedMemory
         /// <returns></returns>
         /// <exception cref="ObjectDisposedException">Thrown if this object has been disposed</exception>
         /// <exception cref="InvalidOperationException">Thrown if the underlying buffers have been closed by the channel owner</exception>
-        protected virtual Task<RpcResponse> SendMessage(MessageType msgType, RpcRequest request, byte[] payload, ulong responseMsgId = 0, int timeout = defaultTimeoutMs)
+        protected virtual Task<RpcResponse> SendMessage(MessageType msgType, RpcRequest request, byte[] payload, ulong responseMsgId = 0,
+            int timeout = defaultTimeoutMs)
         {
             ThrowIfDisposedOrShutdown();
 
@@ -788,7 +823,6 @@ namespace SharedMemory
 
                     if (timeout == Timeout.Infinite)
                         return request.ResponseReady.Task;
-
 
                     return request.ResponseReady.Task.TimeoutAfter(timeout);
                 }
@@ -832,7 +866,9 @@ namespace SharedMemory
 
                 byte[] pMsg = null;
 
-                ushort totalPackets = ((msg?.Length ?? 0) == 0) ? (ushort)1 : Convert.ToUInt16(Math.Ceiling((double)msg.Length / (double)msgBufferLength));
+                ushort totalPackets = ((msg?.Length ?? 0) == 0)
+                    ? (ushort)1
+                    : Convert.ToUInt16(Math.Ceiling((double)msg.Length / (double)msgBufferLength));
                 ushort currentPacket = 1;
 
                 while (true)
@@ -877,8 +913,7 @@ namespace SharedMemory
                     }
 
                     Statistics.StartWaitWrite();
-                    var bytes = WriteBuffer.Write((ptr) =>
-                    {
+                    var bytes = WriteBuffer.Write((ptr) => {
                         FastStructure.WriteBytes(ptr, pMsg, 0, pMsg.Length);
                         return pMsg.Length;
                     }, 1000);
@@ -898,7 +933,6 @@ namespace SharedMemory
 
         private Boolean m_ReadThreadIsReading = false;
         private object m_ReadThreadIsReadingLock = new object();
-
 
 
         void ReadThreadV1()
@@ -930,13 +964,11 @@ namespace SharedMemory
                     {
                         Statistics.StartWaitRead();
 
-                        l_TempReadBuffer.Read((ptr) =>
-                        {
+                        l_TempReadBuffer.Read((ptr) => {
                             int readLength = 0;
                             var header = FastStructure<RpcProtocolHeaderV1>.PtrToStructure(ptr);
                             ptr = ptr + protocolLength;
                             readLength += protocolLength;
-                    
 
                             RpcRequest request = null;
                             if (header.MsgType == MessageType.RpcResponse || header.MsgType == MessageType.ErrorInRpc)
@@ -956,8 +988,9 @@ namespace SharedMemory
                                 });
                             }
 
-                            int packetSize = header.PayloadSize < msgBufferLength ? header.PayloadSize :
-                                (header.CurrentPacket < header.TotalPackets ? msgBufferLength : header.PayloadSize % msgBufferLength);
+                            int packetSize = header.PayloadSize < msgBufferLength
+                                ? header.PayloadSize
+                                : (header.CurrentPacket < header.TotalPackets ? msgBufferLength : header.PayloadSize % msgBufferLength);
 
                             if (header.PayloadSize > 0)
                             {
@@ -999,13 +1032,12 @@ namespace SharedMemory
                                 else if (header.MsgType == MessageType.RpcRequest)
                                 {
                                     // For Handling Request we create an new Task because this can take sometime
-                                    Task.Run(async () =>
-                                    {
+                                    Task.Run(async () => {
                                         try
                                         {
                                             await ProcessCallHandler(request).ConfigureAwait(false);
                                         }
-                                        catch(Exception ex)
+                                        catch (Exception ex)
                                         {
                                             // Ignore Object Disposed and Invalid Operation Exceptions
                                             // because the other side of the rpc buffers may 
@@ -1013,7 +1045,7 @@ namespace SharedMemory
                                             if (!(ex is ObjectDisposedException || ex is InvalidOperationException))
                                             {
                                                 throw;
-                                            }                               
+                                            }
                                         }
                                     });
                                 }
@@ -1045,7 +1077,7 @@ namespace SharedMemory
             }
         }
 
-        private int _processCount= 0;
+        private int _processCount = 0;
         private object _processLock = new object();
 
         async Task ProcessCallHandler(RpcRequest request)
@@ -1104,7 +1136,6 @@ namespace SharedMemory
                 }
             }
 
-            
         }
 
         #region IDisposable
@@ -1130,6 +1161,7 @@ namespace SharedMemory
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
             Dispose(true);
@@ -1139,6 +1171,7 @@ namespace SharedMemory
         /// IDisposable pattern - dispose of managed/unmanaged resources
         /// </summary>
         /// <param name="disposeManagedResources">true to dispose of managed resources as well as unmanaged.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected virtual void Dispose(bool disposeManagedResources)
         {
             if (Disposed)
@@ -1148,7 +1181,7 @@ namespace SharedMemory
 
             if (disposeManagedResources)
             {
-                DisposeManagedResources();   
+                DisposeManagedResources();
             }
         }
 
@@ -1183,13 +1216,10 @@ namespace SharedMemory
 
                 }
 
-                
-
-                
             }
 
-                // Mark as Disposed first otherwise ReadThread has NullPointerException because
-                // ReadBuffer is already null but Disposed is false
+            // Mark as Disposed first otherwise ReadThread has NullPointerException because
+            // ReadBuffer is already null but Disposed is false
 
             long l_OldValue = Interlocked.Exchange(ref _disposed, 1);
 
@@ -1218,7 +1248,7 @@ namespace SharedMemory
 
             // Mark as DisposeFinished
             Interlocked.Exchange(ref _disposed, 2);
-            }
+        }
 
         #endregion
     }

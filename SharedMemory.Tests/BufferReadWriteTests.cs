@@ -11,10 +11,7 @@ namespace SharedMemoryTests
         {
             var name = Guid.NewGuid().ToString();
             using (var buf = new SharedMemory.BufferReadWrite(name, 1024))
-            using (var buf2 = new SharedMemory.BufferReadWrite(name))
-            {
-
-            }
+            using (var buf2 = new SharedMemory.BufferReadWrite(name)) { }
         }
 
         [Test]
@@ -46,7 +43,6 @@ namespace SharedMemoryTests
             var name = Guid.NewGuid().ToString();
             byte[] data = new byte[1024];
             byte[] readData = new byte[1024];
-
 
             using (var buf = new SharedMemory.BufferReadWrite(name, 1024))
             using (var buf2 = new SharedMemory.BufferReadWrite(name))

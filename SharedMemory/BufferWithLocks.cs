@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text;
@@ -49,7 +50,7 @@ namespace SharedMemory
         /// An event handle used for blocking write operations.
         /// </summary>
         protected EventWaitHandle WriteWaitEvent { get; private set; }
-        
+
         /// <summary>
         /// An event handle used for blocking read operations.
         /// </summary>
@@ -83,9 +84,9 @@ namespace SharedMemory
         /// </summary>
         public virtual int ReadWriteTimeout
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _readWriteTimeout; }
-            set
-            {
+            set {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException("ReadWriteTimeout", "Must be larger than -1.");
                 _readWriteTimeout = value;
@@ -148,7 +149,8 @@ namespace SharedMemory
         private void WriteWait()
         {
             if (!WriteWaitEvent.WaitOne(ReadWriteTimeout))
-                throw new TimeoutException("The write operation timed out waiting for the write lock WaitEvent. Check your usage of AcquireWriteLock/ReleaseWriteLock and AcquireReadLock/ReleaseReadLock.");
+                throw new TimeoutException(
+                    "The write operation timed out waiting for the write lock WaitEvent. Check your usage of AcquireWriteLock/ReleaseWriteLock and AcquireReadLock/ReleaseReadLock.");
         }
 
         /// <summary>
@@ -208,7 +210,8 @@ namespace SharedMemory
         private void ReadWait()
         {
             if (!ReadWaitEvent.WaitOne(ReadWriteTimeout))
-                throw new TimeoutException("The read operation timed out waiting for the read lock WaitEvent. Check your usage of AcquireWriteLock/ReleaseWriteLock and AcquireReadLock/ReleaseReadLock.");
+                throw new TimeoutException(
+                    "The read operation timed out waiting for the read lock WaitEvent. Check your usage of AcquireWriteLock/ReleaseWriteLock and AcquireReadLock/ReleaseReadLock.");
         }
 
         /// <summary>

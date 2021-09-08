@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SharedMemory.Utilities
@@ -181,6 +182,7 @@ namespace SharedMemory.Utilities
         /// <returns>The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1" />.</returns>
         public int Count
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _count; }
         }
 
@@ -188,6 +190,7 @@ namespace SharedMemory.Utilities
         /// <returns>true if the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only; otherwise, false.</returns>
         public bool IsReadOnly
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return false; }
         }
 

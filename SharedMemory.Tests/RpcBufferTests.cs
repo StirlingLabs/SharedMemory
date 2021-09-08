@@ -226,11 +226,8 @@ namespace SharedMemoryTests
         [Test]
         public void RPC_Timeout()
         {
-            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) =>
-            {
-            }, bufferCapacity: 256);
-            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) =>
-            {
+            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) => { }, bufferCapacity: 256);
+            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) => {
                 Task.Delay(1000).Wait();
                 return new byte[] { (byte)(payload[0] * payload[1]) };
             });
@@ -243,11 +240,8 @@ namespace SharedMemoryTests
         [Test]
         public void RPC_Timeout_FireAndForget()
         {
-            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) =>
-            {
-            }, bufferCapacity: 256);
-            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) =>
-            {
+            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) => { }, bufferCapacity: 256);
+            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) => {
                 Task.Delay(1000).Wait();
                 return new byte[] { (byte)(payload[0] * payload[1]) };
             });
@@ -275,10 +269,10 @@ namespace SharedMemoryTests
                 var watch = Stopwatch.StartNew();
                 var result = ipcMaster.RemoteRequest(new byte[] { 3, 3 }, 1000);
                 var elapsed = watch.Elapsed;
-                
+
                 Assert.IsTrue(result.Success);
                 Assert.AreEqual((3 * 3), result.Data[0]);
-                
+
                 sum += watch.Elapsed;
                 var ms = elapsed.TotalMilliseconds;
                 times[i] = ms;
@@ -290,65 +284,55 @@ namespace SharedMemoryTests
             var stdDev = Math.Sqrt(times.Sum(d => Math.Pow(d - avgMs, 2)) / (count - 1));
 
             //Assert.IsTrue(watch.ElapsedMilliseconds < 1000);
-            TestContext.WriteLine($"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
+            TestContext.WriteLine(
+                $"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
             try { Plot(times, max, nameof(RPC_LoadTest_5k_Small), "Call", "Time (ms)"); }
             catch (InvalidOperationException ex) { TestContext.WriteLine(ex.ToString()); }
         }
-        
+
         [Test]
-        public void RPC_LoadTest_5k_Small_Multi_Thread([Values(10)]int outerCount, [Values(5000)]int innerCount)
+        [Repeat(10)]
+        public void RPC_LoadTest_5k_Small_Multi_Thread([Values(5000)] int count)
         {
             // Warmup the Theadpool
-            ThreadPool.SetMinThreads(15, 10);
-            
-            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) =>
-            {
-            }, bufferCapacity: 256);
-            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) =>
-            {
+            //ThreadPool.SetMinThreads(15, 10);
+
+            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) => { }, bufferCapacity: 256);
+            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) => {
                 return new byte[] { (byte)(payload[0] * payload[1]) };
             });
 
-            Stopwatch watch = Stopwatch.StartNew();
-
             List<Task> tasks = new List<Task>();
-            var count = outerCount * innerCount;
             var times = new double[count];
             var max = double.MinValue;
             var min = double.MaxValue;
             var sum = default(TimeSpan);
-            for (int i = 0; i < outerCount; i++)
-            {
-                var c = new StrongBox<int>(i);
-                tasks.Add(Task.Run(() => {
-                    var boxedI = c.Value;
-                    // Send request to slave from master
-                    for (var j = 0; j < innerCount; j++)
-                    {
-                        var watch = Stopwatch.StartNew();
-                        var result = ipcMaster.RemoteRequest(new byte[] { 3, 3 });
-                        var elapsed = watch.Elapsed;
-                        Assert.IsTrue(result.Success);
-                        Assert.AreEqual((3 * 3), result.Data[0]);
-                        
-                        sum += watch.Elapsed;
-                        var ms = elapsed.TotalMilliseconds;
-                        times[boxedI * innerCount + j] = ms;
-                        if (ms > max) max = ms;
-                        if (ms < min) min = ms;
-                    }       
-                }));
-                
-            }
+            tasks.Add(Task.Run(() => {
+                // Send request to slave from master
+                for (var j = 0; j < count; j++)
+                {
+                    var watch = Stopwatch.StartNew();
+                    var result = ipcMaster.RemoteRequest(new byte[] { 3, 3 });
+                    var elapsed = watch.Elapsed;
+                    Assert.IsTrue(result.Success);
+                    Assert.AreEqual((3 * 3), result.Data[0]);
+
+                    sum += watch.Elapsed;
+                    var ms = elapsed.TotalMilliseconds;
+                    times[j] = ms;
+                    if (ms > max) max = ms;
+                    if (ms < min) min = ms;
+                }
+            }));
             var avg = sum / count;
             var avgMs = avg.TotalMilliseconds;
             var stdDev = Math.Sqrt(times.Sum(d => Math.Pow(d - avgMs, 2)) / (count - 1));
 
             Task.WaitAll(tasks.ToArray());
-            watch.Stop();
 
             //Assert.IsTrue(watch.ElapsedMilliseconds < 1000);
-            TestContext.WriteLine($"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
+            TestContext.WriteLine(
+                $"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
             try { Plot(times, max, nameof(RPC_LoadTest_5k_Small_Multi_Thread), "Call", "Time (ms)"); }
             catch (InvalidOperationException ex) { TestContext.WriteLine(ex.ToString()); }
         }
@@ -390,7 +374,8 @@ namespace SharedMemoryTests
             var stdDev = Math.Sqrt(times.Sum(d => Math.Pow(d - avgMs, 2)) / (count - 1));
 
             //Assert.IsTrue(watch.ElapsedMilliseconds < 2000);
-            TestContext.WriteLine($"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
+            TestContext.WriteLine(
+                $"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
             try { Plot(times, max, nameof(RPC_LoadTest_1k_Large), "Call", "Time (ms)"); }
             catch (InvalidOperationException ex) { TestContext.WriteLine(ex.ToString()); }
         }
@@ -431,7 +416,8 @@ namespace SharedMemoryTests
             var stdDev = Math.Sqrt(times.Sum(d => Math.Pow(d - avgMs, 2)) / (count - 1));
 
             //Assert.IsTrue(watch.ElapsedMilliseconds < 1000);
-            TestContext.WriteLine($"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
+            TestContext.WriteLine(
+                $"Sum {sum.TotalSeconds:F3}s, Avg {avg.TotalMilliseconds:F3}ms, Sd {stdDev:F3}ms, Max {max:F3}ms, Min {min:F3}ms");
             try { Plot(times, max, nameof(RPC_LoadTest_NestedCalls), "Call", "Time (ms)"); }
             catch (InvalidOperationException ex) { TestContext.WriteLine(ex.ToString()); }
         }
@@ -453,43 +439,36 @@ namespace SharedMemoryTests
 
             Assert.Throws<InvalidOperationException>(() => ipcSlave.RemoteRequest(null));
         }
-        
+
         [Test]
+        [Repeat(3)]
         public void RPC_Dispose()
         {
             // Warmup the Theadpool
-            ThreadPool.SetMinThreads(15, 10);
+            //ThreadPool.SetMinThreads(15, 10);
 
-            for (int i = 0; i < 3; i++)
-            {
-                ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) =>
-                {
-                }, bufferCapacity: 256);
+            ipcMaster = new RpcBuffer(ipcName, async (msgId, payload) => { }, bufferCapacity: 256);
 
-                ipcSlave = new RpcBuffer(ipcName, (msgId, payload) =>
-                {
-                    ipcSlave.Dispose();
-                    return new byte[] { (byte)(payload[0] * payload[1]) };
-                    
-                });
-
-                Stopwatch watch = Stopwatch.StartNew();
-
-                ipcMaster.RemoteRequestAsync(new byte[] { 3, 3 });
-                Task.Delay(125).Wait();
+            ipcSlave = new RpcBuffer(ipcName, (msgId, payload) => {
                 ipcSlave.Dispose();
-                watch.Stop();
+                return new byte[] { (byte)(payload[0] * payload[1]) };
 
-                ipcMaster.Dispose();
+            });
 
-                while (!ipcMaster.DisposeFinished || !ipcSlave.DisposeFinished)
-                {
-                    Task.Delay(125).Wait();
-                }
-                
+            Stopwatch watch = Stopwatch.StartNew();
+
+            ipcMaster.RemoteRequestAsync(new byte[] { 3, 3 });
+            Task.Delay(125).Wait();
+            ipcSlave.Dispose();
+            watch.Stop();
+
+            ipcMaster.Dispose();
+
+            while (!ipcMaster.DisposeFinished || !ipcSlave.DisposeFinished)
+            {
+                Task.Delay(125).Wait();
             }
-            
+
         }
-        
     }
 }

@@ -31,6 +31,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text;
@@ -61,8 +62,9 @@ namespace SharedMemory
         /// </summary>
         public virtual long SharedMemorySize
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
-                return HeaderOffset + Marshal.SizeOf(typeof(SharedHeader)) + BufferSize;
+                return HeaderOffset + Unsafe.SizeOf<SharedHeader>() + BufferSize;
             }
         }
 
@@ -76,6 +78,7 @@ namespace SharedMemory
         /// </summary>
         public bool ShuttingDown
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
                 if (Header == null || Header->Shutdown == 1)
                 {
@@ -93,6 +96,7 @@ namespace SharedMemory
         /// </summary>
         protected virtual long HeaderOffset
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
                 return 0;
             }
@@ -103,8 +107,9 @@ namespace SharedMemory
         /// </summary>
         protected virtual long BufferOffset
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
-                return HeaderOffset + Marshal.SizeOf(typeof(SharedHeader));
+                return HeaderOffset + Unsafe.SizeOf<SharedHeader>();
             }
         }
 
@@ -226,13 +231,13 @@ namespace SharedMemory
                     Mmf = OpenExisting();
 
                     // Retrieve the header from the shared memory in order to initialise the correct size
-                    using (var headerView = Mmf.CreateViewAccessor(0, HeaderOffset + Marshal.SizeOf(typeof(SharedHeader)),
+                    using (var headerView = Mmf.CreateViewAccessor(0, HeaderOffset + Unsafe.SizeOf<SharedHeader>(),
                         MemoryMappedFileAccess.Read))
                     {
                         byte* headerPtr = null;
                         headerView.SafeMemoryMappedViewHandle.AcquirePointer(ref headerPtr);
                         var header = (SharedHeader*)(headerPtr + HeaderOffset);
-                        BufferSize = header->SharedMemorySize - Marshal.SizeOf(typeof(SharedHeader));
+                        BufferSize = header->SharedMemorySize - Unsafe.SizeOf<SharedHeader>();
                         headerView.SafeMemoryMappedViewHandle.ReleasePointer();
                     }
 
@@ -240,7 +245,7 @@ namespace SharedMemory
                     View = Mmf.CreateViewAccessor(0, SharedMemorySize, MemoryMappedFileAccess.ReadWrite);
                     View.SafeMemoryMappedViewHandle.AcquirePointer(ref ViewPtr);
                     Header = (SharedHeader*)(ViewPtr + HeaderOffset);
-                    BufferStartPtr = ViewPtr + HeaderOffset + Marshal.SizeOf(typeof(SharedHeader));
+                    BufferStartPtr = ViewPtr + HeaderOffset + Unsafe.SizeOf<SharedHeader>();
                 }
             }
             catch

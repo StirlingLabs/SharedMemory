@@ -23,6 +23,7 @@
 // The SharedMemory library is inspired by the following Code Project article:
 //   "Fast IPC Communication Using Shared Memory and InterlockedCompareExchange"
 //   http://www.codeproject.com/Articles/14740/Fast-IPC-Communication-Using-Shared-Memory-and-Int
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace SharedMemory
     public struct SharedHeader
     {
         /// <summary>
-        /// The total size of the buffer including <see cref="SharedHeader"/>, i.e. <code>BufferSize + Marshal.SizeOf(typeof(SharedMemory.SharedHeader))</code>.
+        /// The total size of the buffer including <see cref="SharedHeader"/>, i.e. <code>BufferSize + Unsafe.SizeOf<SharedMemory.SharedHeader>()</code>.
         /// </summary>
         public long SharedMemorySize;
 

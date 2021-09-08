@@ -26,6 +26,7 @@
 
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
@@ -125,9 +126,7 @@ namespace SharedMemoryTests
         public void Constructor_Producer_True()
         {
             string name = Guid.NewGuid().ToString();
-            using (var smr = new CircularBuffer(name, 2, 1))
-            {
-            }
+            using (var smr = new CircularBuffer(name, 2, 1)) { }
         }
 
         [Test]
@@ -136,9 +135,7 @@ namespace SharedMemoryTests
             string name = Guid.NewGuid().ToString();
             try
             {
-                using (var smr = new CircularBuffer(name))
-                {
-                }
+                using (var smr = new CircularBuffer(name)) { }
             }
             catch (System.IO.FileNotFoundException)
             {
@@ -154,9 +151,7 @@ namespace SharedMemoryTests
             try
             {
                 using (var smr = new CircularBuffer(name, 2, 1))
-                using (var smr2 = new CircularBuffer(name, 2, 1))
-                {
-                }
+                using (var smr2 = new CircularBuffer(name, 2, 1)) { }
             }
             catch (System.IO.IOException)
             {
@@ -170,10 +165,7 @@ namespace SharedMemoryTests
         {
             string name = Guid.NewGuid().ToString();
             using (var producer = new CircularBuffer(name, 2, 1))
-            using (var consumer = new CircularBuffer(name))
-            {
-
-            }
+            using (var consumer = new CircularBuffer(name)) { }
         }
 
         [Test]
@@ -200,9 +192,7 @@ namespace SharedMemoryTests
             string name = Guid.NewGuid().ToString();
             try
             {
-                using (var smr = new CircularBuffer(name, 6, int.MaxValue))
-                {
-                }
+                using (var smr = new CircularBuffer(name, 6, int.MaxValue)) { }
             }
             catch (System.IO.IOException)
             {
@@ -225,19 +215,19 @@ namespace SharedMemoryTests
         [Test]
         public void StructSize_SharedMemoryHeader_Is16bytes()
         {
-            Assert.AreEqual(16, Marshal.SizeOf(typeof(SharedHeader)));
+            Assert.AreEqual(16, Unsafe.SizeOf<SharedHeader>());
         }
 
         [Test]
         public void StructSize_Node_Is32bytes()
         {
-            Assert.AreEqual(32, Marshal.SizeOf(typeof(CircularBuffer.Node)));
+            Assert.AreEqual(32, Unsafe.SizeOf<CircularBuffer.Node>());
         }
 
         [Test]
         public void StructSize_SharedMemoryNodeHeader_Is24bytes()
         {
-            Assert.AreEqual(24, Marshal.SizeOf(typeof(CircularBuffer.NodeHeader)));
+            Assert.AreEqual(24, Unsafe.SizeOf<CircularBuffer.NodeHeader>());
         }
 
         #endregion
@@ -255,7 +245,7 @@ namespace SharedMemoryTests
 
             // Fill with random data
             r.NextBytes(data);
-            
+
             using (var smr = new CircularBuffer(name, 2, bufSize))
             {
                 Assert.AreEqual(bufSize, smr.Write(data), String.Format("Failed to write {0} bytes", bufSize));
@@ -309,15 +299,14 @@ namespace SharedMemoryTests
                 Assert.AreEqual(1, header.WriteStart, "After single write WriteStart");
                 Assert.AreEqual(1, header.WriteEnd, "After single write WriteEnd");
 
-                Assert.AreEqual(bufSize, smr.Read((ptr) =>
-                    {
-                        header = smr.ReadNodeHeader();
-                        Assert.AreEqual(1, header.ReadStart, "During single read ReadStart");
-                        Assert.AreEqual(0, header.ReadEnd, "During single read ReadEnd");
+                Assert.AreEqual(bufSize, smr.Read((ptr) => {
+                    header = smr.ReadNodeHeader();
+                    Assert.AreEqual(1, header.ReadStart, "During single read ReadStart");
+                    Assert.AreEqual(0, header.ReadEnd, "During single read ReadEnd");
 
-                        Marshal.Copy(ptr, readBuf, 0, smr.NodeBufferSize);
-                        return smr.NodeBufferSize;
-                    }), String.Format("Failed to read {0} bytes", bufSize));
+                    Marshal.Copy(ptr, readBuf, 0, smr.NodeBufferSize);
+                    return smr.NodeBufferSize;
+                }), String.Format("Failed to read {0} bytes", bufSize));
 
                 header = smr.ReadNodeHeader();
                 Assert.AreEqual(1, header.ReadStart, "After single read ReadStart");
@@ -338,7 +327,7 @@ namespace SharedMemoryTests
         public void ReadWrite_MyTestStruct_DataMatches()
         {
             string name = Guid.NewGuid().ToString();
-            int nodeSize = Marshal.SizeOf(typeof(MyTestStruct));
+            int nodeSize = Unsafe.SizeOf<MyTestStruct>();
 
             using (var smr = new CircularBuffer(name, 2, nodeSize))
             using (var sm2 = new CircularBuffer(name))
@@ -400,7 +389,7 @@ namespace SharedMemoryTests
         }
 
         private long WriteMultiple<T>(CircularBuffer smr, T[][] data, out int timeouts, int delay = 0, int timeout = 1000)
-            where T: struct
+            where T : struct
         {
             T[] writeBuf = null;
             long totalBytesWritten = 0;
@@ -449,7 +438,7 @@ namespace SharedMemoryTests
         }
 
         private long ReadMultipleWithCheck<T>(CircularBuffer smr, T[][] writtenData, out int timeouts, int delay = 0, int timeout = 1000)
-            where T: struct
+            where T : struct
         {
             T[] readBuf = new T[writtenData[0].Length];
             long totalBytesRead = 0;
@@ -464,7 +453,8 @@ namespace SharedMemoryTests
                 else
                 {
                     for (var i = 0; i < readBuf.Length; i++)
-                        Assert.AreEqual(writtenData[iteration][i], readBuf[i], String.Format("Data written does not match data read for iteration {0} at index {1}", iteration, i));
+                        Assert.AreEqual(writtenData[iteration][i], readBuf[i],
+                            String.Format("Data written does not match data read for iteration {0} at index {1}", iteration, i));
                     iteration++;
                 }
 
@@ -494,14 +484,12 @@ namespace SharedMemoryTests
             using (var producer = new CircularBuffer(name, 2, bufSize))
             using (var consumer = new CircularBuffer(name))
             {
-                Action writer = () =>
-                {
+                Action writer = () => {
                     long totalBytesWritten = WriteMultiple(producer, data, out timeouts);
                     Assert.AreEqual(totalBytesWritten, iterations * bufSize, "Failed to write all bytes");
                 };
 
-                Action reader = () =>
-                {
+                Action reader = () => {
                     long totalBytesRead = ReadMultipleWithCheck(consumer, data, out timeouts);
                     Assert.AreEqual(totalBytesRead, iterations * bufSize, "Failed to read all bytes");
                 };
@@ -538,15 +526,13 @@ namespace SharedMemoryTests
             using (var producer = new CircularBuffer(name, 2, bufSize))
             using (var consumer = new CircularBuffer(name))
             {
-                Action writer = () =>
-                {
+                Action writer = () => {
                     int writeTimeouts = 0;
                     long totalBytesWritten = WriteMultiple(producer, data, out writeTimeouts, 0, 1);
                     Assert.IsTrue(writeTimeouts > 0);
                 };
 
-                Action reader = () =>
-                {
+                Action reader = () => {
                     int readTimeouts = 0;
                     long totalBytesRead = ReadMultipleWithCheck(consumer, data, out readTimeouts, 1);
                 };
@@ -583,14 +569,12 @@ namespace SharedMemoryTests
             using (var producer = new CircularBuffer(name, 2, bufSize))
             using (var consumer = new CircularBuffer(name))
             {
-                Action writer = () =>
-                {
+                Action writer = () => {
                     int writeTimeouts = 0;
                     long totalBytesWritten = WriteMultiple(producer, data, out writeTimeouts, 1);
                 };
 
-                Action reader = () =>
-                {
+                Action reader = () => {
                     int readTimeouts = 0;
                     long totalBytesRead = ReadMultiple(consumer, data, out readTimeouts, 0, 1);
                     Assert.IsTrue(readTimeouts > 0);
@@ -613,7 +597,7 @@ namespace SharedMemoryTests
         /// <para>Tests the integrity of the protected <see cref="SharedMemoryRing.PostNode"/> and <see cref="SharedMemoryRing.ReturnNode"/> functions to ensure that
         /// nodes are made available in the same order that they were reserved regardless of the order Post/ReturnNode is called.</para>
         /// <para>E.g. if nodes 1, 2 & 3 are reserved for writing in sequence, but they are ready in reverse order (i.e. PostNode is called for node 3, 2 and then 1), 
-        /// the call to PostNode for node 3 and 2 will simply mark <see cref="SharedMemoryRing.Node.DoneWrite"/> as 1 and then return, while the call to PostNode 
+        /// the call to PostNode for node 3 and 2 will simply mark <see cref="CircularBuffer.Node.DoneWrite"/> as 1 and then return, while the call to PostNode 
         /// for node 1 will move the WriteEnd pointer for node 1, 2 and then 3 also clearing the DoneWrite flag. This ensures that the nodes are ready for reading in 
         /// the correct order and the read/write indexes maintain their integrity. The same applies to reading and ReturnNode.</para>
         /// </summary>
@@ -638,20 +622,17 @@ namespace SharedMemoryTests
                 Assert.AreEqual(0, header.ReadStart, "Initial ReadStart");
                 Assert.AreEqual(0, header.ReadEnd, "Initial ReadEnd");
 
-                Assert.AreEqual(bufSize, smr.Write((ptr) =>
-                {
+                Assert.AreEqual(bufSize, smr.Write((ptr) => {
                     header = smr.ReadNodeHeader();
                     Assert.AreEqual(1, header.WriteStart, "During nested out of order write (1) WriteStart");
                     Assert.AreEqual(0, header.WriteEnd, "During nested out of order write (1) WriteEnd");
 
-                    smr.Write((ptr2) =>
-                    {
+                    smr.Write((ptr2) => {
                         header = smr.ReadNodeHeader();
                         Assert.AreEqual(2, header.WriteStart, "During nested out of order write (2) WriteStart");
                         Assert.AreEqual(0, header.WriteEnd, "During nested out of order write (2) WriteEnd");
 
-                        smr.Write((ptr3) =>
-                        {
+                        smr.Write((ptr3) => {
                             header = smr.ReadNodeHeader();
                             Assert.AreEqual(3, header.WriteStart, "During nested out of order write (3) WriteStart");
                             Assert.AreEqual(0, header.WriteEnd, "During nested out of order write (3) WriteEnd");
@@ -676,20 +657,17 @@ namespace SharedMemoryTests
                 Assert.AreEqual(3, header.WriteStart, "After nested out of order writes (1,2,3) WriteStart");
                 Assert.AreEqual(3, header.WriteEnd, "After nested out of order writes (1,2,3) WriteEnd");
 
-                Assert.AreEqual(bufSize, smr.Read((ptr) =>
-                {
+                Assert.AreEqual(bufSize, smr.Read((ptr) => {
                     header = smr.ReadNodeHeader();
                     Assert.AreEqual(1, header.ReadStart, "During nested out of order read (1) ReadStart");
                     Assert.AreEqual(0, header.ReadEnd, "During nested out of order read (1) ReadEnd");
 
-                    smr.Read((ptr2) =>
-                    {
+                    smr.Read((ptr2) => {
                         header = smr.ReadNodeHeader();
                         Assert.AreEqual(2, header.ReadStart, "During nested out of order read (2) ReadStart");
                         Assert.AreEqual(0, header.ReadEnd, "During nested out of order read (2) ReadEnd");
 
-                        smr.Read((ptr3) =>
-                        {
+                        smr.Read((ptr3) => {
                             header = smr.ReadNodeHeader();
                             Assert.AreEqual(3, header.ReadStart, "During nested out of order read (3) ReadStart");
                             Assert.AreEqual(0, header.ReadEnd, "During nested out of order read (3) ReadEnd");
@@ -730,7 +708,7 @@ namespace SharedMemoryTests
             Random r = new Random();
             TestStruct[] data = new TestStruct[100];
             TestStruct[] readBuff = new TestStruct[100];
-            int bufSize = Marshal.SizeOf(typeof(TestStruct)) * 100;
+            int bufSize = Unsafe.SizeOf<TestStruct>() * 100;
 
             // Fill with random data
             for (var i = 0; i < data.Length; i++)
@@ -759,9 +737,9 @@ namespace SharedMemoryTests
             Random r = new Random();
             TestStruct[] data = new TestStruct[88];
             TestStruct[] readBuff = new TestStruct[88];
-            
+
             // Enough room to only fit 3 TestStruct elements
-            int bufSize = Marshal.SizeOf(typeof(TestStruct)) * 3;
+            int bufSize = Unsafe.SizeOf<TestStruct>() * 3;
 
             // Fill with random data
             for (var i = 0; i < data.Length; i++)
@@ -786,7 +764,7 @@ namespace SharedMemoryTests
                     totalWriteCount += writeCount;
                     iterations++;
                 }
-                Assert.AreEqual(Math.Ceiling((double)(data.Length * Marshal.SizeOf(typeof(TestStruct))) / bufSize), iterations);
+                Assert.AreEqual(Math.Ceiling((double)(data.Length * Unsafe.SizeOf<TestStruct>()) / bufSize), iterations);
                 Assert.AreEqual(data.Length, totalWriteCount);
                 for (var i = 0; i < totalWriteCount; i++)
                     Assert.AreEqual(data[i], readBuff[i], String.Format("Data written does not match data read at index {0}", i));
@@ -850,8 +828,7 @@ namespace SharedMemoryTests
             }
 
             // create write delegate
-            Func<IntPtr,int> writeFunc = (addr) =>
-            {
+            Func<IntPtr, int> writeFunc = (addr) => {
                 int indx = 0;
                 int count = writeBuf.Length;
                 while (count > 0)
@@ -864,8 +841,7 @@ namespace SharedMemoryTests
             };
 
             // create read delegate
-            Func<IntPtr, int> readFunc = (addr) =>
-            {
+            Func<IntPtr, int> readFunc = (addr) => {
                 int indx = 0;
                 int count = readBuf.Length;
                 while (count > 0)
@@ -891,6 +867,5 @@ namespace SharedMemoryTests
         }
 
         #endregion
-
     }
 }

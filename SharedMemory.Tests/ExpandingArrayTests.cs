@@ -20,6 +20,7 @@ namespace SharedMemoryTests
             }
 
             Assert.AreEqual(
+// @formatter:off
 @"0/0
 1/0
 2/0
@@ -53,6 +54,7 @@ namespace SharedMemoryTests
 30/3
 31/4
 ", sb.ToString());
+// @formatter:on
         }
 
         [Test]
@@ -101,7 +103,6 @@ namespace SharedMemoryTests
 
             Assert.AreEqual(11103, ea.Sum());
 
-            
 //            var a = new int[ea.Count + 1];
 //            ea.CopyTo(a, 1);
 //            Assert.AreEqual(

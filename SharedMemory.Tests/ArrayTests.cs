@@ -126,7 +126,6 @@ namespace SharedMemoryTests
 
                 Assert.IsTrue(exceptionThrown, "Index of Length should result in ArgumentOutOfRangeException");
 
-
                 try
                 {
                     exceptionThrown = false;
@@ -152,15 +151,13 @@ namespace SharedMemoryTests
 
             public string Name
             {
-                get
-                {
+                get {
                     fixed (char* n = name)
                     {
                         return new String(n);
                     }
                 }
-                set
-                {
+                set {
                     fixed (char* n = name)
                     {
                         int indx = 0;
@@ -287,32 +284,30 @@ namespace SharedMemoryTests
                 sma.AcquireWriteLock();
                 using (var smr = new SharedArray<byte>(name))
                 {
-                    var t1 = Task.Factory.StartNew(() =>
-                        {
-                            if (System.Threading.Interlocked.Exchange(ref syncValue, 1) == 0)
-                                readIsFirst = true;
-                            // Should block until write lock is released
-                            smr.AcquireReadLock();
-                            if (System.Threading.Interlocked.Exchange(ref syncValue, 3) == 4)
-                                readBlocked = true;
-                            smr.CopyTo(readBuf);
-                            smr.ReleaseReadLock();
-                        });
+                    var t1 = Task.Factory.StartNew(() => {
+                        if (System.Threading.Interlocked.Exchange(ref syncValue, 1) == 0)
+                            readIsFirst = true;
+                        // Should block until write lock is released
+                        smr.AcquireReadLock();
+                        if (System.Threading.Interlocked.Exchange(ref syncValue, 3) == 4)
+                            readBlocked = true;
+                        smr.CopyTo(readBuf);
+                        smr.ReleaseReadLock();
+                    });
 
                     System.Threading.Thread.Sleep(10);
 
-                    var t2 = Task.Factory.StartNew(() =>
-                        {
-                            var val = System.Threading.Interlocked.Exchange(ref syncValue, 2);
-                            if (val == 0)
-                                readIsFirst = false;
-                            else if (val == 3)
-                                readBlocked = false;
-                            System.Threading.Thread.Sleep(10);
-                            sma.Write(data);
-                            System.Threading.Interlocked.Exchange(ref syncValue, 4);
-                            sma.ReleaseWriteLock();
-                        });
+                    var t2 = Task.Factory.StartNew(() => {
+                        var val = System.Threading.Interlocked.Exchange(ref syncValue, 2);
+                        if (val == 0)
+                            readIsFirst = false;
+                        else if (val == 3)
+                            readBlocked = false;
+                        System.Threading.Thread.Sleep(10);
+                        sma.Write(data);
+                        System.Threading.Interlocked.Exchange(ref syncValue, 4);
+                        sma.ReleaseWriteLock();
+                    });
 
                     Task.WaitAll(t1, t2);
 

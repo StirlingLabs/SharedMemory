@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 
@@ -36,13 +37,13 @@ namespace SharedMemory
     /// </summary>
     /// <typeparam name="T">The structure type that will be stored in the elements of this fixed array buffer.</typeparam>
     public class SharedArray<T> : BufferWithLocks, IList<T>
-            where T : struct
+        where T : struct
     {
         /// <summary>
         /// Gets a 32-bit integer that represents the total number of elements in the <see cref="SharedArray{T}"/>
         /// </summary>
         public int Length { get; private set; }
-        
+
         /// <summary>
         /// Gets or sets the element at the specified index
         /// </summary>
@@ -51,14 +52,12 @@ namespace SharedMemory
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 -or- index is equal to or greater than <see cref="Length"/>.</exception>
         public T this[int index]
         {
-            get
-            {
+            get {
                 T item;
                 Read(out item, index);
                 return item;
             }
-            set
-            {
+            set {
                 Write(ref value, index);
             }
         }
@@ -73,10 +72,10 @@ namespace SharedMemory
         /// <param name="name">The name of the shared memory array to be created.</param>
         /// <param name="length">The number of elements to make room for within the shared memory array.</param>
         public SharedArray(string name, int length)
-            : base(name, Marshal.SizeOf(typeof(T)) * length, true)
+            : base(name, Unsafe.SizeOf<T>() * length, true)
         {
             Length = length;
-            _elementSize = Marshal.SizeOf(typeof(T));
+            _elementSize = Unsafe.SizeOf<T>();
 
             Open();
         }
@@ -89,7 +88,7 @@ namespace SharedMemory
         public SharedArray(string name)
             : base(name, 0, false)
         {
-            _elementSize = Marshal.SizeOf(typeof(T));
+            _elementSize = Unsafe.SizeOf<T>();
 
             Open();
         }
@@ -208,6 +207,7 @@ namespace SharedMemory
         #endregion
 
         #region IList<T>
+
         /// <summary>
         /// Operation not supported. Throws <see cref="System.NotImplementedException"/>
         /// </summary>
@@ -250,6 +250,7 @@ namespace SharedMemory
         /// </summary>
         public int Count
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return Length; }
         }
 
@@ -259,6 +260,7 @@ namespace SharedMemory
         /// </summary>
         public bool IsReadOnly
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return true; }
         }
 
@@ -296,6 +298,5 @@ namespace SharedMemory
         }
 
         #endregion
-
     }
 }

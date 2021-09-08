@@ -23,10 +23,12 @@
 // The SharedMemory library is inspired by the following Code Project article:
 //   "Fast IPC Communication Using Shared Memory and InterlockedCompareExchange"
 //   http://www.codeproject.com/Articles/14740/Fast-IPC-Communication-Using-Shared-Memory-and-Int
+
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace SharedMemory
 {
@@ -287,21 +289,21 @@ namespace SharedMemory
         /// <param name="value"></param>
         /// <returns></returns>
         public unsafe delegate void* GetPtrDelegate(ref T value);
-        
+
         /// <summary>
         /// Delegate for loading a structure from the specified memory address
         /// </summary>
         /// <param name="pointer"></param>
         /// <returns></returns>
         public delegate T PtrToStructureDelegate(IntPtr pointer);
-        
+
         /// <summary>
         /// Delegate for writing a structure to the specified memory address
         /// </summary>
         /// <param name="value"></param>
         /// <param name="pointer"></param>
         public delegate void StructureToPtrDelegate(ref T value, IntPtr pointer);
-        
+
         /// <summary>
         /// The <see cref="GetPtrDelegate"/> delegate for the generated IL to retrieve a pointer to the structure
         /// </summary>
@@ -318,10 +320,10 @@ namespace SharedMemory
         public readonly static StructureToPtrDelegate StructureToPtr = BuildWriteToPointerFunction();
 
         /// <summary>
-        /// Cached size of T as determined by <see cref="System.Runtime.InteropServices.Marshal.SizeOf(Type)"/>.
+        /// Cached size of T as determined by <see cref="Unsafe.SizeOf{T}"/>
         /// </summary>
-        public static readonly int Size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(T));
-        
+        public static readonly int Size = Unsafe.SizeOf<T>();
+
         private static DynamicMethod method;
         private static DynamicMethod methodLoad;
         private static DynamicMethod methodWrite;
@@ -407,7 +409,8 @@ namespace SharedMemory
             {
                 if (!info.FieldType.IsPrimitive && !info.FieldType.IsValueType && !info.FieldType.IsPointer)
                 {
-                    throw new ArgumentException(String.Format("Non-value types are not supported: field {0} is of type {1} in structure {2}", info.Name, info.FieldType.Name, info.DeclaringType.Name));
+                    throw new ArgumentException(String.Format("Non-value types are not supported: field {0} is of type {1} in structure {2}",
+                        info.Name, info.FieldType.Name, info.DeclaringType.Name));
                 }
 
                 // Example for adding future marshal attributes as incompatible
